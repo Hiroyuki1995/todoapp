@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.todoapp.mapper.ItemMapper">
+  <resultMap id="itemMap" type="com.example.todoapp.model.Item">
+    <id property="itemId" column="item_id" />
+    <result property="itemName" column="item_name" />
+    <result property="itemCategory" column="item_category" />
+  </resultMap>
+  <select id="findAll" resultMap="itemMap"> SELECT * FROM items </select>
+  <select id="findOneById" resultMap="itemMap"> SELECT * FROM items where item_id = #{itemId} </select>
+  <delete id="deleteOneById">delete from items where item_id = #{itemId}</delete>
+  <insert id="addOne" parameterType="com.example.todoapp.model.Item"> INSERT INTO items (item_id,
+    item_name, item_category) VALUES (#{itemId}, #{itemName}, #{itemCategory}) </insert>
+  <update id="updateOne" parameterType="map"> UPDATE items SET item_id = #{item.itemId}, item_name =
+    #{item.itemName}, item_category = #{item.itemCategory} WHERE item_id = #{itemId}</update>
+</mapper>
