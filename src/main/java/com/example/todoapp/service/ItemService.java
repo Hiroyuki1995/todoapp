@@ -48,7 +48,7 @@ public class ItemService {
     itemMapper.addOne(item);
   }
 
-  public void udpateItem(Item item, String itemId) {
+  public void updateItem(Item item, String itemId) {
     // for (int i = 0; i < allItems.size(); i++) {
     // if (allItems.get(i).getItemId().equals(itemId)) {
     // allItems.set(i, item);

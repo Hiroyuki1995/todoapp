@@ -20,6 +20,12 @@ public class ItemController {
   @Autowired
   private ItemService itemService;
 
+  public ItemController(ItemService itemService) {
+    this.itemService = itemService;
+  }
+
+  // コントローラーには/loginは記載しない
+
   @GetMapping(value = "/items")
   public List<Item> getAllItems() {
     return itemService.getAllItems();
@@ -37,7 +43,7 @@ public class ItemController {
 
   @PutMapping("/items/{itemId}")
   public void updateItem(@RequestBody Item item, @PathVariable("itemId") String itemId) {
-    itemService.udpateItem(item, itemId);
+    itemService.updateItem(item, itemId);
   }
 
   @DeleteMapping("/items/{itemId}")
