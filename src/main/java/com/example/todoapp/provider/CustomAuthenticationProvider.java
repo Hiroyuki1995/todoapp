@@ -24,7 +24,7 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
     logger.info(username + 'a' + password);
 
     // ここでユーザー名とパスワードの検証を行う
-    if (username.equals("admin") && password.equals("password")) { // TODO
+    if (username.equals("admin") && password.equals("password")) { // TODO:DBからID/PWを突合。PWを暗号化。
       // List<GrantedAuthority> authorities = new ArrayList<>();
       // authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
       // return new UsernamePasswordAuthenticationToken(username, password,
