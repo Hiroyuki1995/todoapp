@@ -26,22 +26,25 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         http
-                .csrf(AbstractHttpConfigurer::disable) // 本当にdisabledで良いか確認
+                .csrf(AbstractHttpConfigurer::disable) // TODO:本当にdisabledで良いか確認
                 .authorizeHttpRequests(authz -> authz
                         .requestMatchers("/login", "/oidc/token/*", "/oauth2/authorization/google",
                                 "/login/oauth2/code/google",
-                                "/google/login", "/login/*,/favicon.ico") // TODO:不要なパス削除
+                                "/google/login", "/login/*,/favicon.ico") // 認証不要なパスの定義
+                        // TODO:不要なパス削除
                         .permitAll()
-                        .anyRequest().authenticated())
+                        .anyRequest().authenticated()) // 上記以外のパスは全て認証必要
                 .sessionManagement((session) -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
-                .formLogin((formLogin) -> formLogin
-                        .loginProcessingUrl("/login")
-                        .successHandler(new MyAuthenticationSuccessHandler())
-                        .failureHandler(new MyAuthenticationFailureHandler()) // カスタム失敗ハンドラー
+                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)) // セッションIDは必要があれば作成するポリシー
+                .formLogin((formLogin) -> formLogin // 独自のID/PWを使った通常のログイン
+                        // ログイン処理は、provider/CustomAuthenticationProvider.javaで定義
+                        // TODO: 現状 loginid: admin, password: passwordでログインするので、DBから取得するように変更
+                        .loginProcessingUrl("/login") // ログインAPIのパスの定義
+                        .successHandler(new MyAuthenticationSuccessHandler()) // APIとして成功時は200を返却するようにカスタマイズ。デフォルトは/へリダイレクト。
+                        .failureHandler(new MyAuthenticationFailureHandler()) // APIとして失敗時は401を返却するようにカスタマイズ。デフォルトは/loginへリダイレクト。
                         .permitAll())
                 // .oauth2Login(Customizer.withDefaults())
-                .oauth2Login((oauth2) -> oauth2
+                .oauth2Login((oauth2) -> oauth2 // OAuth2.0を使って、SSOできるようにするための設定
                         .defaultSuccessUrl("http://localhost:5173", true) // ログイン成功後のリダイレクトURL
                         .failureUrl("http://localhost:5173/login") // ログイン失敗時のリダイレクトURL
                         // // .clientRegistrationRepository(clientRegistrationRepository()) //
@@ -59,7 +62,7 @@ public class SecurityConfig {
                         // // .authorizationRequestRepository(this.authorizationRequestRepository())
                         // // .authorizationRequestResolver(this.authorizationRequestResolver()))
                         .redirectionEndpoint(redirection -> redirection
-                                .baseUri("/oidc/token/*"))) //
+                                .baseUri("/oidc/token/*")))
                 // トークン取得・ユーザーデータ取得処理を行うパスの定義。このパス/{registrationId}を叩くと。この行がない場合、デフォルトは/login/oauth2/code/*（*はregistrationId
                 // 【参考】https://spring.pleiades.io/spring-security/reference/servlet/oauth2/login/advanced.html#oauth2login-advanced-redirection-endpoint
                 // // .tokenEndpoint(token -> token
@@ -70,9 +73,9 @@ public class SecurityConfig {
                 // // .oidcUserService(this.oidcUserService())))
                 // ))
                 .logout((logout) -> logout
-                        .logoutUrl("/logout") // ログアウトをトリガーするURL
-                        .logoutSuccessHandler(customLogoutSuccessHandler()) // ログアウト成功時のハンドラ
-                        .deleteCookies("SESSION") // ログアウト時にクッキーを削除
+                        .logoutUrl("/logout") // ログアウトURLの定義
+                        .logoutSuccessHandler(customLogoutSuccessHandler()) // APIとしてログアウト成功時は200を返却するようにスタマイズ。デフォルトは/loginへリダイレクト。
+                        .deleteCookies("SESSION") // ログアウト時クッキー内のセッションIDを削除
                         .invalidateHttpSession(true) // セッションを無効にする
                         .clearAuthentication(true)) // 認証情報をクリアする
                 .exceptionHandling(ex -> ex

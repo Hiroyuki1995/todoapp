@@ -24,13 +24,15 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
     logger.info(username + 'a' + password);
 
     // ここでユーザー名とパスワードの検証を行う
-    if (username.equals("admin") && password.equals("password")) { // TODO:DBからID/PWを突合。PWを暗号化。
+    if (username.equals("admin") && password.equals("password")) {
+      // TODO:DBからID/PWを突合。PWを暗号化。
       // List<GrantedAuthority> authorities = new ArrayList<>();
       // authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
       // return new UsernamePasswordAuthenticationToken(username, password,
       // authorities);
       return new UsernamePasswordAuthenticationToken(username, password,
           Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"))); // 第三引数を追加することで、Authenticatedフラグがtrueになる
+      // TODO: ROLE_USERでよいか確認
     } else {
       throw new BadCredentialsException("Authentication failed");
     }
