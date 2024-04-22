@@ -28,7 +28,10 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable) // 本当にdisabledで良いか確認
                 .authorizeHttpRequests(authz -> authz
-                        .requestMatchers("/login", "/login/oauth2/code/google").permitAll()
+                        .requestMatchers("/login", "/oidc/token/*", "/oauth2/authorization/google",
+                                "/login/oauth2/code/google",
+                                "/google/login", "/login/*,/favicon.ico") // TODO:不要なパス削除
+                        .permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement((session) -> session
                         .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
@@ -37,25 +40,28 @@ public class SecurityConfig {
                         .successHandler(new MyAuthenticationSuccessHandler())
                         .failureHandler(new MyAuthenticationFailureHandler()) // カスタム失敗ハンドラー
                         .permitAll())
-                // .oauth2Login(oauth2 -> oauth2
-                // .loginPage("/test/login") // オプション：カスタムログインページのURL
-                // .defaultSuccessUrl("/home", true) // ログイン成功後のリダイレクトURL
-                // .failureUrl("/login?error") // ログイン失敗時のリダイレクトURL
-                // // .clientRegistrationRepository(clientRegistrationRepository()) //
-                // クライアント登録情報
-                // //
-                // .authorizedClientService(authorizedClientService(clientRegistrationRepository()))
-                // // 認証済みクライアントの管理
-                // .defaultSuccessUrl("http://localhoast:5174", true)
-                // // .clientRegistrationRepository(this.clientRegistrationRepository())
-                // // .authorizedClientRepository(this.authorizedClientRepository())
-                // // .authorizedClientService(this.authorizedClientService())
-                // .(authorization -> authorization
-                // .baseUri(authorizationEndpoint"/login/oauth2/code/google")
-                // // .authorizationRequestRepository(this.authorizationRequestRepository())
-                // // .authorizationRequestResolver(this.authorizationRequestResolver()))
-                // // .redirectionEndpoint(redirection -> redirection
-                // // .baseUri(this.authorizationResponseBaseUri()))
+                // .oauth2Login(Customizer.withDefaults())
+                .oauth2Login((oauth2) -> oauth2
+                        .defaultSuccessUrl("http://localhost:5173", true) // ログイン成功後のリダイレクトURL
+                        .failureUrl("http://localhost:5173/login") // ログイン失敗時のリダイレクトURL
+                        // // .clientRegistrationRepository(clientRegistrationRepository()) //
+                        // クライアント登録情報
+                        // //
+                        // .authorizedClientService(authorizedClientService(clientRegistrationRepository()))
+                        // // 認証済みクライアントの管理
+                        // // .clientRegistrationRepository(this.clientRegistrationRepository())
+                        // // .authorizedClientRepository(this.authorizedClientRepository())
+                        // // .authorizedClientService(this.authorizedClientService())
+                        .authorizationEndpoint(authorization -> authorization
+                                .baseUri("/login")) // このパス/{registrationId}を叩くと認証処理が走る。デフォルトは/oauth2/authorization +
+                                                    // /{registrationId}が適用される
+                                                    // 【参考】https://spring.pleiades.io/spring-security/reference/servlet/oauth2/login/advanced.html#oauth2login-advanced-login-page
+                        // // .authorizationRequestRepository(this.authorizationRequestRepository())
+                        // // .authorizationRequestResolver(this.authorizationRequestResolver()))
+                        .redirectionEndpoint(redirection -> redirection
+                                .baseUri("/oidc/token/*"))) //
+                // トークン取得・ユーザーデータ取得処理を行うパスの定義。このパス/{registrationId}を叩くと。この行がない場合、デフォルトは/login/oauth2/code/*（*はregistrationId
+                // 【参考】https://spring.pleiades.io/spring-security/reference/servlet/oauth2/login/advanced.html#oauth2login-advanced-redirection-endpoint
                 // // .tokenEndpoint(token -> token
                 // // .accessTokenResponseClient(this.accessTokenResponseClient()))
                 // // .userInfoEndpoint(userInfo -> userInfo
@@ -102,19 +108,4 @@ public class SecurityConfig {
             response.setStatus(HttpServletResponse.SC_OK); // 200 OK ステータスを返す
         };
     }
-
-    // @Bean
-    // public ClientRegistrationRepository clientRegistrationRepository() {
-    // // ここでは具体的なClientRegistrationの設定が必要です。
-    // // 例えば、application.yml から読み取った設定をもとに ClientRegistration を生成して登録します。
-    // // この例では省略しますが、実際のアプリケーションではClientRegistrationの生成が必要です。
-    // return new InMemoryClientRegistrationRepository(); // この部分は具体的な登録データが必要
-    // }
-
-    // @Bean
-    // public OAuth2AuthorizedClientService authorizedClientService(
-    // ClientRegistrationRepository clientRegistrationRepository) {
-    // return new
-    // InMemoryOAuth2AuthorizedClientService(clientRegistrationRepository);
-    // }
 }

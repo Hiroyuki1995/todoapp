@@ -1,5 +1,19 @@
-- google で scope=openid で SSO できるようにする
+-java 21 or 18
+
+- bizsol モック作成（開発者ポータルだと、クライアント ID や認可コードのつながりがばらばらに見える）
+  モックの nonce の値を当初送った値と一緒にしたい。その場合、id トークンの署名の変更も必要？だとしたら秘密鍵も必要では？
+- express hotreload
+- bizsol 開発者ポータルの id 連携でのシリアライズ問題を解決する
+- LINE scope に id トークンを入れる
+  https://developers.line.biz/ja/reference/line-login/#issue-access-token
+- bizsol 開発者ポータル SSO 実装
+- google の oauth2 で SSO するのではなく、作成済のユーザーと紐付けできる作りにする
 - sessionid を cookie に入れずに/api/user を送ると set-cookie が返却されてしまう問題
+- LINE ログインに PKCE 追加
+- 可視性重視で application.properties を yml に変える
+- securityconfig を xml でも表現できるようにしてみる
+- README.md に google developer console の登録方法を記述する
+- okta や keycloak など複数のサービスで sso できるようにする
 - google アカウントでの SSO を実現
 - OIDC による SSO を実現したい
 - ログインエラー時にリダイレクトされないようにしたい
@@ -7,7 +21,7 @@
 - 業務エラー・システムエラーで返却するエラーコードを変えたい
 - ログイン ID/pw は json 形式で送れるようにしたい
 - ログインユーザーは DB から取得できるようにしたい
-- ユーザーに紐づいたデータのみ取得できるようにしたい
+- ユーザーに紐づいたデータのみ取得できるようにしたい sol
 - セッションの有効期限を指定する。直前の更新から X 分経過した場合は再度アクセスできないようにする
 - CSRF トークンを有効化する
 - フロントエンド-バックエンドを接続してログイン機能を実装（ページリクエスト時のセッションをどうするかは要検討か）
