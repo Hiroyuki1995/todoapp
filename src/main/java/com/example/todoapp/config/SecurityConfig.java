@@ -1,19 +1,45 @@
 package com.example.todoapp.config;
 
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserRequest;
+import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService;
+import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
+import org.springframework.security.oauth2.core.OAuth2AccessToken;
+import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.security.oauth2.core.oidc.OidcIdToken;
+import org.springframework.security.oauth2.core.oidc.OidcUserInfo;
+import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
+import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
+// import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.RestTemplate;
 
+import com.example.todoapp.handler.CustomAuthenticationFailureHandler;
 import com.example.todoapp.handler.MyAuthenticationFailureHandler;
 import com.example.todoapp.handler.MyAuthenticationSuccessHandler;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -21,6 +47,9 @@ import jakarta.servlet.http.HttpServletResponse;
 @EnableWebSecurity(debug = true)
 @EnableMethodSecurity
 public class SecurityConfig {
+
+    @Value("${spring.security.oauth2.client.registration.bizsol-mock.client-id}")
+    private String clientId;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -47,6 +76,7 @@ public class SecurityConfig {
                 .oauth2Login((oauth2) -> oauth2 // OAuth2.0を使って、SSOできるようにするための設定
                         .defaultSuccessUrl("http://localhost:5173", true) // ログイン成功後のリダイレクトURL
                         .failureUrl("http://localhost:5173/login") // ログイン失敗時のリダイレクトURL
+                        .failureHandler(new CustomAuthenticationFailureHandler()) // カスタムハンドラーをセット
                         // // .clientRegistrationRepository(clientRegistrationRepository()) //
                         // クライアント登録情報
                         // //
@@ -62,16 +92,13 @@ public class SecurityConfig {
                         // // .authorizationRequestRepository(this.authorizationRequestRepository())
                         // // .authorizationRequestResolver(this.authorizationRequestResolver()))
                         .redirectionEndpoint(redirection -> redirection
-                                .baseUri("/oidc/token/*")))
-                // トークン取得・ユーザーデータ取得処理を行うパスの定義。このパス/{registrationId}を叩くと。この行がない場合、デフォルトは/login/oauth2/code/*（*はregistrationId
-                // 【参考】https://spring.pleiades.io/spring-security/reference/servlet/oauth2/login/advanced.html#oauth2login-advanced-redirection-endpoint
-                // // .tokenEndpoint(token -> token
-                // // .accessTokenResponseClient(this.accessTokenResponseClient()))
-                // // .userInfoEndpoint(userInfo -> userInfo
-                // // .userAuthoritiesMapper(this.userAuthoritiesMapper())
-                // // .userService(this.oauth2UserService())
-                // // .oidcUserService(this.oidcUserService())))
-                // ))
+                                .baseUri("/oidc/token/*"))
+                        // トークン取得・ユーザーデータ取得処理を行うパスの定義。このパス/{registrationId}を叩くと。この行がない場合、デフォルトは/login/oauth2/code/*（*はregistrationId
+                        // 【参考】https://spring.pleiades.io/spring-security/reference/servlet/oauth2/login/advanced.html#oauth2login-advanced-redirection-endpoint
+                        // // .tokenEndpoint(token -> token
+                        // // .accessTokenResponseClient(this.accessTokenResponseClient()))
+                        .userInfoEndpoint(userInfo -> userInfo
+                                .oidcUserService(this.oidcUserService())))
                 .logout((logout) -> logout
                         .logoutUrl("/logout") // ログアウトURLの定義
                         .logoutSuccessHandler(customLogoutSuccessHandler()) // APIとしてログアウト成功時は200を返却するようにスタマイズ。デフォルトは/loginへリダイレクト。
@@ -81,7 +108,7 @@ public class SecurityConfig {
                 .exceptionHandling(ex -> ex
                         .accessDeniedHandler(customAccessDeniedHandler()) // アクセス拒否ハンドラー
                         .authenticationEntryPoint(customAuthenticationEntryPoint())); // 認証エントリーポイント
-        ;
+
         return http.build();
     }
 
@@ -109,6 +136,54 @@ public class SecurityConfig {
     public LogoutSuccessHandler customLogoutSuccessHandler() {
         return (request, response, authentication) -> {
             response.setStatus(HttpServletResponse.SC_OK); // 200 OK ステータスを返す
+        };
+    }
+
+    // TODO:別クラスで定義した方がよいか？
+    @Bean
+    public OAuth2UserService<OidcUserRequest, OidcUser> oidcUserService() {
+        return new OAuth2UserService<OidcUserRequest, OidcUser>() {
+            @Override
+            public OidcUser loadUser(OidcUserRequest userRequest) throws OAuth2AuthenticationException {
+                if ("bizsol-mock".equals(userRequest.getClientRegistration().getRegistrationId())) {
+                    // ユーザー情報の取得をカスタム処理に置き換える
+                    String uri = userRequest.getClientRegistration().getProviderDetails().getUserInfoEndpoint()
+                            .getUri();
+                    OAuth2AccessToken accessToken = userRequest.getAccessToken();
+
+                    HttpHeaders headers = new HttpHeaders();
+                    headers.setBearerAuth(accessToken.getTokenValue());
+                    HttpEntity<?> entity = new HttpEntity<>(headers);
+                    OidcIdToken idToken = userRequest.getIdToken();
+                    String sub = idToken.getSubject(); // ID トークンから "sub" を取得
+
+                    RestTemplate restTemplate = new RestTemplate();
+                    ResponseEntity<String> response = restTemplate.exchange(
+                            uri + "?client_id=" + clientId + "&sub=" + sub,
+                            HttpMethod.GET, entity, String.class);
+
+                    try {
+                        // 応答からユーザー情報を解析する
+                        Map<String, Object> userInfo = new ObjectMapper().readValue(response.getBody(),
+                                new TypeReference<Map<String, Object>>() {
+                                });
+
+                        // ユーザー権限の設定 (ここでは簡単な例を示します)
+                        Set<GrantedAuthority> authorities = new HashSet<>();
+                        authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
+
+                        // OIDCUser を生成する
+                        OidcUserInfo oidcUserInfo = new OidcUserInfo(userInfo);
+                        return new DefaultOidcUser(authorities, idToken, oidcUserInfo);
+
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                } else {
+                    OidcUserService defaultService = new OidcUserService();
+                    return defaultService.loadUser(userRequest);
+                }
+            }
         };
     }
 }

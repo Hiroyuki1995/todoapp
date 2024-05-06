@@ -10,7 +10,7 @@ target/
 .classpath
 .factorypath
 .project
-.settings
+.settings 
 .springBeans
 .sts4-cache
 
@@ -34,3 +34,4 @@ build/
 .vscode/
 
 src/main/resources/application.properties
+secret.txt
