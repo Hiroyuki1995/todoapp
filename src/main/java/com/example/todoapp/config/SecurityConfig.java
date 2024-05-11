@@ -1,45 +1,27 @@
 package com.example.todoapp.config;
 
-import java.io.IOException;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserRequest;
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
-import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
-import org.springframework.security.oauth2.core.oidc.OidcIdToken;
-import org.springframework.security.oauth2.core.oidc.OidcUserInfo;
-import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
-// import org.springframework.web.client.RestTemplate;
-import org.springframework.web.client.RestTemplate;
 
 import com.example.todoapp.handler.CustomAuthenticationFailureHandler;
 import com.example.todoapp.handler.MyAuthenticationFailureHandler;
 import com.example.todoapp.handler.MyAuthenticationSuccessHandler;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.example.todoapp.service.BizsolMockUserService;
 
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -139,47 +121,17 @@ public class SecurityConfig {
         };
     }
 
-    // TODO:別クラスで定義した方がよいか？
     @Bean
     public OAuth2UserService<OidcUserRequest, OidcUser> oidcUserService() {
         return new OAuth2UserService<OidcUserRequest, OidcUser>() {
             @Override
             public OidcUser loadUser(OidcUserRequest userRequest) throws OAuth2AuthenticationException {
                 if ("bizsol-mock".equals(userRequest.getClientRegistration().getRegistrationId())) {
-                    // ユーザー情報の取得をカスタム処理に置き換える
-                    String uri = userRequest.getClientRegistration().getProviderDetails().getUserInfoEndpoint()
-                            .getUri();
-                    OAuth2AccessToken accessToken = userRequest.getAccessToken();
-
-                    HttpHeaders headers = new HttpHeaders();
-                    headers.setBearerAuth(accessToken.getTokenValue());
-                    HttpEntity<?> entity = new HttpEntity<>(headers);
-                    OidcIdToken idToken = userRequest.getIdToken();
-                    String sub = idToken.getSubject(); // ID トークンから "sub" を取得
-
-                    RestTemplate restTemplate = new RestTemplate();
-                    ResponseEntity<String> response = restTemplate.exchange(
-                            uri + "?client_id=" + clientId + "&sub=" + sub,
-                            HttpMethod.GET, entity, String.class);
-
-                    try {
-                        // 応答からユーザー情報を解析する
-                        Map<String, Object> userInfo = new ObjectMapper().readValue(response.getBody(),
-                                new TypeReference<Map<String, Object>>() {
-                                });
-
-                        // ユーザー権限の設定 (ここでは簡単な例を示します)
-                        Set<GrantedAuthority> authorities = new HashSet<>();
-                        authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
-
-                        // OIDCUser を生成する
-                        OidcUserInfo oidcUserInfo = new OidcUserInfo(userInfo);
-                        return new DefaultOidcUser(authorities, idToken, oidcUserInfo);
-
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
+                    // IdPがBizSOLモックのときだけ、クエリパラメータ追加のため独自実装
+                    BizsolMockUserService bizsolMockUserService = new BizsolMockUserService();
+                    return bizsolMockUserService.loadUser(userRequest);
                 } else {
+                    // IdPが上記以外の場合は、デフォルトのユーザー情報エンドポイントへリクエスト
                     OidcUserService defaultService = new OidcUserService();
                     return defaultService.loadUser(userRequest);
                 }

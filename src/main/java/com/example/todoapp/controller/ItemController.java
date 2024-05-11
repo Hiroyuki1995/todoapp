@@ -3,8 +3,11 @@ package com.example.todoapp.controller;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -13,7 +16,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.todoapp.model.Item;
 import com.example.todoapp.model.UserInfo;
-import com.example.todoapp.service.GoogleUserInfoService;
 import com.example.todoapp.service.ItemService;
 import com.example.todoapp.service.UserInfoService;
 
@@ -23,16 +25,27 @@ public class ItemController {
   @Autowired
   private ItemService itemService;
   private UserInfoService userInfoService;
-  private GoogleUserInfoService googleUserInfoService;
 
-  public ItemController(ItemService itemService, UserInfoService userInfoService,
-      GoogleUserInfoService googleUserInfoService) {
+  public ItemController(ItemService itemService, UserInfoService userInfoService) {
     this.itemService = itemService;
     this.userInfoService = userInfoService;
-    this.googleUserInfoService = googleUserInfoService;
   }
 
   // コントローラーには/loginは記載しない
+
+  @ModelAttribute("loginId")
+  public String getCurrentLoginId() {
+    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    if (authentication != null && authentication.isAuthenticated()) {
+      Object principal = authentication.getPrincipal();
+      // CustomAuthenticationProviderのUsernamePasswordAuthenticationTokenの第一引数で定義した値
+      System.out.println("principal:" + principal);
+      if (principal instanceof String) {
+        return ((String) principal);
+      }
+    }
+    return null;
+  }
 
   @GetMapping(value = "/user")
   public UserInfo getUser() {
@@ -40,13 +53,13 @@ public class ItemController {
   }
 
   @GetMapping(value = "/items")
-  public List<Item> getAllItems() {
-    return itemService.getAllItems();
+  public List<Item> getAllItems(@ModelAttribute("loginId") String loginId) {
+    return itemService.getAllItems(loginId);
   }
 
   @GetMapping("/items/{itemId}")
-  public Item getItem(@PathVariable("itemId") String itemId) {
-    return itemService.getItem(itemId);
+  public Item getItem(@PathVariable("itemId") String itemId, @ModelAttribute("loginId") String loginId) {
+    return itemService.getItem(itemId, loginId);
   }
 
   @PostMapping("/items")
@@ -63,20 +76,4 @@ public class ItemController {
   public void deleteItem(@PathVariable("itemId") String itemId) {
     itemService.deleteItem(itemId);
   }
-
-  @GetMapping("/")
-  public String index() {
-    return "アクセス成功です";
-  }
-
-  @GetMapping(value = "/welcome")
-  public String welcome() {
-    return "Spring Bootへようこそ";
-  }
-
-  @GetMapping(value = "/hello")
-  public String hello() {
-    return "Hello World!";
-  }
-
 }

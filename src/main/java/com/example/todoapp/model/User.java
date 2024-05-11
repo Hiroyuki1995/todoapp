@@ -2,23 +2,23 @@ package com.example.todoapp.model;
 
 public class User {
 
-  private String username;
+  private String loginId;
   private String password;
 
   public User() {
   }
 
-  public User(String username, String password) {
-    this.username = username;
+  public User(String loginId, String password) {
+    this.loginId = loginId;
     this.password = password;
   }
 
-  public String getUsername() {
-    return username;
+  public String getLoginId() {
+    return loginId;
   }
 
-  public void setUsername(String username) {
-    this.username = username;
+  public void setLoginId(String loginId) {
+    this.loginId = loginId;
   }
 
   public String getPassword() {
@@ -28,4 +28,5 @@ public class User {
   public void setPassword(String password) {
     this.password = password;
   }
+
 }

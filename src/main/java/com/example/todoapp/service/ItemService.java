@@ -28,13 +28,13 @@ public class ItemService {
       new Item("4", "サプリメント", "ヘルス"),
       new Item("5", "ブルーベリー", "フルーツ")));
 
-  public List<Item> getAllItems() {
+  public List<Item> getAllItems(String loginId) {
     // return allItems;
-    return itemMapper.findAll();
+    return itemMapper.findAll(loginId);
   }
 
-  public Item getItem(String itemId) {
-    return itemMapper.findOneById(itemId);
+  public Item getItem(String itemId, String loginId) {
+    return itemMapper.findOneById(itemId, loginId);
     // for (int i = 0; i < allItems.size(); i++) {
     // if (allItems.get(i).getItemId().equals(itemId)) {
     // return (Item) allItems.get(i);

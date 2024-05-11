@@ -11,9 +11,10 @@ import com.example.todoapp.model.Item;
 
 @Mapper
 public interface ItemMapper {
-  List<Item> findAll();
+  List<Item> findAll(String loginId);
 
-  Item findOneById(@Param("itemId") String itemId);
+  Item findOneById(@Param("itemId") String itemId, String loginId);
+  // TODO: なぜ@Paramをいれるのか
 
   void addOne(Item item);
 
