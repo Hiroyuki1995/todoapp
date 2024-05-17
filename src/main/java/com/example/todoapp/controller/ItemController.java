@@ -4,7 +4,6 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -18,6 +17,9 @@ import com.example.todoapp.model.Item;
 import com.example.todoapp.model.UserInfo;
 import com.example.todoapp.service.ItemService;
 import com.example.todoapp.service.UserInfoService;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 
 @RestController
 public class ItemController {
@@ -34,17 +36,22 @@ public class ItemController {
   // コントローラーには/loginは記載しない
 
   @ModelAttribute("loginId")
-  public String getCurrentLoginId() {
-    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+  public String getCurrentLoginId(HttpSession session) {
+    Authentication authentication = (Authentication) session.getAttribute("ORIGINAL_AUTH");
     if (authentication != null && authentication.isAuthenticated()) {
       Object principal = authentication.getPrincipal();
       // CustomAuthenticationProviderのUsernamePasswordAuthenticationTokenの第一引数で定義した値
       System.out.println("principal:" + principal);
       if (principal instanceof String) {
-        return ((String) principal);
+        return (String) principal;
       }
     }
     return null;
+  }
+
+  @PostMapping(value = "/signup")
+  public void signUp(@RequestBody UserInfo userInfo, HttpServletRequest request) {
+    userInfoService.signUp(userInfo, request);
   }
 
   @GetMapping(value = "/user")
@@ -63,8 +70,8 @@ public class ItemController {
   }
 
   @PostMapping("/items")
-  public void addItem(@RequestBody Item item) {
-    itemService.addItem(item);
+  public void addItem(@RequestBody Item item, @ModelAttribute("loginId") String loginId) { // item.itemIdはnull
+    itemService.addItem(item, loginId);
   }
 
   @PutMapping("/items/{itemId}")

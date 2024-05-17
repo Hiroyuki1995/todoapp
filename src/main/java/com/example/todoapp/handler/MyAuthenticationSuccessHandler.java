@@ -14,6 +14,7 @@ public class MyAuthenticationSuccessHandler implements AuthenticationSuccessHand
             Authentication authentication) throws IOException {
         // 認証成功時の処理。ここでは単に200 OKステータスを設定しています。
         response.setStatus(HttpServletResponse.SC_OK);
+        request.getSession().setAttribute("ORIGINAL_AUTH", authentication);
 
         // 必要に応じて、レスポンスボディに情報を追加することもできます。
         // response.getWriter().print("{\"message\": \"Authentication successful\"}");

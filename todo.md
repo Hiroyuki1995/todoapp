@@ -1,21 +1,33 @@
--java 21 or 18
-
-- bizsol モック作成（開発者ポータルだと、クライアント ID や認可コードのつながりがばらばらに見える）
-  モックの nonce の値を当初送った値と一緒にしたい。その場合、id トークンの署名の変更も必要？だとしたら秘密鍵も必要では？
+- 外部アカウントでサインインできるようにする（既存ユーザーと紐付け可能とする）
+  ←SecurityContextHolder にある principal を独自ログイン時と同じ形式にする？
+- ユーザーサインアップ機能
+  https://qiita.com/t-yama-3/items/a538d47b8f0a27639d23#6-%E3%83%A6%E3%83%BC%E3%82%B6%E3%83%BC%E7%99%BB%E9%8C%B2%E3%82%92%E3%81%97%E3%81%A6%E3%83%AD%E3%82%B0%E3%82%A4%E3%83%B3%E3%81%99%E3%82%8B%E5%9F%BA%E6%9C%AC%E9%83%A8%E5%88%86
+- securitycontext と session の一般的な使い方。
+- 外部アカウントでサインアップできるようにする（既存ユーザーいなくても単体でアカウント作成可能とする）
+- 多要素認証
+- ログインパスワード暗号化
+- アイテム追加後に再度データ取得 api 実行を行う
+- セッション情報にログイン id だけでなく、ユーザー id も入れる
+- AP/postgres のコンテナ化
+- フロントエンドの作成・結合・コンテナ化
+- ECR/Fargate へのデプロイ
+- ロガーの共通化
+- セッションが切れた場合の挙動確認
+- md で機能一覧などドキュメント作成
+- /user のレスポンスをちゃんと考える
+- bizsol モックログイン画面の?NR1=TOP から、クライアントエンドポイントにリダイレクトさせて、認証エンドポイントへ認証しにいくようにできたら改修する（もしかして cookie 認証なし ver と共存できないかも？？）
+- bizsol-mock の必須判定も付与する
+- java 21 or 18
+- bash で java 起動するのに、なぜか mvn clean install しないと、mvn spring-boot:run ができない
 - express hotreload
-- bizsol 開発者ポータルの id 連携でのシリアライズ問題を解決する
-- LINE scope に id トークンを入れる
+- @autowired や@component などのアノテーションの勉強
+- LINE scope に openid を入れる
   https://developers.line.biz/ja/reference/line-login/#issue-access-token
-- bizsol 開発者ポータル SSO 実装
-- google の oauth2 で SSO するのではなく、作成済のユーザーと紐付けできる作りにする
 - sessionid を cookie に入れずに/api/user を送ると set-cookie が返却されてしまう問題
 - LINE ログインに PKCE 追加
 - 可視性重視で application.properties を yml に変える
 - securityconfig を xml でも表現できるようにしてみる
 - README.md に google developer console の登録方法を記述する
-- okta や keycloak など複数のサービスで sso できるようにする
-- google アカウントでの SSO を実現
-- OIDC による SSO を実現したい
 - ログインエラー時にリダイレクトされないようにしたい
 - CSRF や XSS、SamteSite 属性、CSRF トークン、Secure、Httponly の理解
 - 業務エラー・システムエラーで返却するエラーコードを変えたい
@@ -25,12 +37,8 @@
 - セッションの有効期限を指定する。直前の更新から X 分経過した場合は再度アクセスできないようにする
 - CSRF トークンを有効化する
 - フロントエンド-バックエンドを接続してログイン機能を実装（ページリクエスト時のセッションをどうするかは要検討か）
-- AP/postgres のコンテナ化
-- フロントエンドの作成・結合・コンテナ化
-- ECR/Fargate へのデプロイ
+
 - CD の整備
 - CI の整備(JUnit/DBUnit/Selenium での自動テスト)
 - 同期バッチ
 - 非同期バッチ
-- 認証認可
-- OAuth

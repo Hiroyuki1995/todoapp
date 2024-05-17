@@ -13,12 +13,11 @@ import com.example.todoapp.model.Item;
 public interface ItemMapper {
   List<Item> findAll(String loginId);
 
-  Item findOneById(@Param("itemId") String itemId, String loginId);
-  // TODO: なぜ@Paramをいれるのか
+  Item findOneById(@Param("itemId") String itemId, @Param("loginId") String loginId);
 
-  void addOne(Item item);
+  void addOne(@Param("item") Item item, @Param("loginId") String loginId);
 
-  void updateOne(Item item, @Param("itemId") String itemId);
+  void updateOne(@Param("item") Item item, @Param("itemId") String itemId);
 
   void deleteOneById(@Param("itemId") String itemId);
 }

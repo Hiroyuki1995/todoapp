@@ -7,4 +7,10 @@
   </resultMap> -->
   <select id="authenticate" resultType="int"> SELECT count(*) FROM users where login_id = #{loginId}
     and password = #{password} </select>
+  <insert id="signUp" parameterType="com.example.todoapp.model.UserInfo"> INSERT INTO users (id,
+    login_id,password, name) VALUES (gen_random_uuid(), #{username}, #{password}, #{username}) </insert>
+  <!-- TODO:nameフォームを作る -->
+  <update id="googleUserLink"> UPDATE users SET
+    (google_sub,google_given_name,google_family_name,google_email) =
+    (#{sub},#{givenName},#{familyName},#{email}) where login_id = #{loginId}</update>
 </mapper>

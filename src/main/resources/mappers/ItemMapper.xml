@@ -13,7 +13,8 @@
     items.user_id = users.id where users.login_id=#{loginId} and items.id = #{itemId} </select>
   <delete id="deleteOneById">delete from items where id = #{itemId}</delete>
   <insert id="addOne" parameterType="com.example.todoapp.model.Item"> INSERT INTO items (id, name,
-    category) VALUES (#{itemId}, #{itemName}, #{itemCategory}) </insert>
+    category, user_id) VALUES (gen_random_uuid(), #{item.itemName}, #{item.itemCategory}, (select id
+    from users where login_id = #{loginId}) ) </insert>
   <update id="updateOne" parameterType="map"> UPDATE items SET id = #{item.itemId}, name =
     #{item.itemName}, category = #{item.itemCategory} WHERE id = #{itemId}</update>
 </mapper>

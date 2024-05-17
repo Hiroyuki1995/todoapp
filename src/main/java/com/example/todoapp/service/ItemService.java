@@ -1,7 +1,5 @@
 package com.example.todoapp.service;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -21,13 +19,6 @@ public class ItemService {
     this.itemMapper = itemMapper;
   }
 
-  private List<Item> allItems = new ArrayList<>(Arrays.asList(
-      new Item("1", "ネックレス", "ジュエリ"),
-      new Item("2", "パーカー", "ファッション"),
-      new Item("3", "フェイスクリーム", "ビューティ"),
-      new Item("4", "サプリメント", "ヘルス"),
-      new Item("5", "ブルーベリー", "フルーツ")));
-
   public List<Item> getAllItems(String loginId) {
     // return allItems;
     return itemMapper.findAll(loginId);
@@ -43,9 +34,9 @@ public class ItemService {
     // return null;
   }
 
-  public void addItem(Item item) {
+  public void addItem(Item item, String loginId) {
     // allItems.add(item);
-    itemMapper.addOne(item);
+    itemMapper.addOne(item, loginId);
   }
 
   public void updateItem(Item item, String itemId) {

@@ -1,5 +1,6 @@
 package com.example.todoapp.config;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -21,7 +22,9 @@ import org.springframework.security.web.authentication.logout.LogoutSuccessHandl
 import com.example.todoapp.handler.CustomAuthenticationFailureHandler;
 import com.example.todoapp.handler.MyAuthenticationFailureHandler;
 import com.example.todoapp.handler.MyAuthenticationSuccessHandler;
+import com.example.todoapp.handler.MyOauthSuccessHandler;
 import com.example.todoapp.service.BizsolMockUserService;
+import com.example.todoapp.service.UserInfoService;
 
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -33,6 +36,9 @@ public class SecurityConfig {
     @Value("${spring.security.oauth2.client.registration.bizsol-mock.client-id}")
     private String clientId;
 
+    @Autowired
+    private UserInfoService userInfoService;
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
@@ -41,7 +47,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authz -> authz
                         .requestMatchers("/login", "/oidc/token/*", "/oauth2/authorization/google",
                                 "/login/oauth2/code/google",
-                                "/google/login", "/login/*,/favicon.ico") // 認証不要なパスの定義
+                                "/google/login", "/login/*,/favicon.ico", "/signup") // 認証不要なパスの定義
                         // TODO:不要なパス削除
                         .permitAll()
                         .anyRequest().authenticated()) // 上記以外のパスは全て認証必要
@@ -49,36 +55,23 @@ public class SecurityConfig {
                         .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)) // セッションIDは必要があれば作成するポリシー
                 .formLogin((formLogin) -> formLogin // 独自のID/PWを使った通常のログイン
                         // ログイン処理は、provider/CustomAuthenticationProvider.javaで定義
-                        // TODO: 現状 loginid: admin, password: passwordでログインするので、DBから取得するように変更
                         .loginProcessingUrl("/login") // ログインAPIのパスの定義
                         .successHandler(new MyAuthenticationSuccessHandler()) // APIとして成功時は200を返却するようにカスタマイズ。デフォルトは/へリダイレクト。
                         .failureHandler(new MyAuthenticationFailureHandler()) // APIとして失敗時は401を返却するようにカスタマイズ。デフォルトは/loginへリダイレクト。
                         .permitAll())
-                // .oauth2Login(Customizer.withDefaults())
                 .oauth2Login((oauth2) -> oauth2 // OAuth2.0を使って、SSOできるようにするための設定
-                        .defaultSuccessUrl("http://localhost:5173", true) // ログイン成功後のリダイレクトURL
+                        // .defaultSuccessUrl("http://localhost:5173", true) // ログイン成功後のリダイレクトURL
+                        .successHandler(this.myOauthSuccessHandler())
                         .failureUrl("http://localhost:5173/login") // ログイン失敗時のリダイレクトURL
                         .failureHandler(new CustomAuthenticationFailureHandler()) // カスタムハンドラーをセット
-                        // // .clientRegistrationRepository(clientRegistrationRepository()) //
-                        // クライアント登録情報
-                        // //
-                        // .authorizedClientService(authorizedClientService(clientRegistrationRepository()))
-                        // // 認証済みクライアントの管理
-                        // // .clientRegistrationRepository(this.clientRegistrationRepository())
-                        // // .authorizedClientRepository(this.authorizedClientRepository())
-                        // // .authorizedClientService(this.authorizedClientService())
                         .authorizationEndpoint(authorization -> authorization
                                 .baseUri("/login")) // このパス/{registrationId}を叩くと認証処理が走る。デフォルトは/oauth2/authorization +
                                                     // /{registrationId}が適用される
                                                     // 【参考】https://spring.pleiades.io/spring-security/reference/servlet/oauth2/login/advanced.html#oauth2login-advanced-login-page
-                        // // .authorizationRequestRepository(this.authorizationRequestRepository())
-                        // // .authorizationRequestResolver(this.authorizationRequestResolver()))
                         .redirectionEndpoint(redirection -> redirection
                                 .baseUri("/oidc/token/*"))
                         // トークン取得・ユーザーデータ取得処理を行うパスの定義。このパス/{registrationId}を叩くと。この行がない場合、デフォルトは/login/oauth2/code/*（*はregistrationId
                         // 【参考】https://spring.pleiades.io/spring-security/reference/servlet/oauth2/login/advanced.html#oauth2login-advanced-redirection-endpoint
-                        // // .tokenEndpoint(token -> token
-                        // // .accessTokenResponseClient(this.accessTokenResponseClient()))
                         .userInfoEndpoint(userInfo -> userInfo
                                 .oidcUserService(this.oidcUserService())))
                 .logout((logout) -> logout
@@ -137,5 +130,10 @@ public class SecurityConfig {
                 }
             }
         };
+    }
+
+    @Bean
+    public MyOauthSuccessHandler myOauthSuccessHandler() {
+        return new MyOauthSuccessHandler(userInfoService);
     }
 }
